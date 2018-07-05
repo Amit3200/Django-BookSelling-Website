@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block body %}
+<div class="col-md-8 col-md-offset-2 col-sm-12 maincontent">
+  <div style="text-decoration:underline;text-align: center"><h3>Your Cart</h3></div>
+      <div class="cart_container">
+          {% for item in cart %}
+    <div class="cart_item">
+        <div class="cart_listing">
+            <span class="title">{{item.book.title}}</span> by {{item.book.author.first_name}} {{item.book.author.last_name}}
+        </div>
+        <div class="cart_price">
+            <span class="cart_quantity">{{ item.quantity }} X $<span class="cart_value">{{item.book.price}}</span></span>
+            Quantity: <a href="{% url 'add_to_cart' item.book.id %}">[+]</a>/<a href="{% url 'remove_from_cart' item.book.id %}">[-]</a>
+        </div>
+    </div>
+    {% empty %}
+    <div>
+        There are no items in the cart.
+    </div>
+    {% endfor %} 
+    <div class="cart_total">
+        <h4>Total: $<span class="cart_value">{{total}}</span></h4>
+        {% if cart %}
+        <div><a href="{% url 'checkout' 'paypal' %}"><img src="http://mnbrass.org/wp-content/uploads/2015/11/PayPal-PayNow-Button.png" alt="PayPal Logo" align="right" width="150px"></a></div>
+        <div>
+            {% csrf_token %}
+        <a href="#">
+            <img src="{% static 'base/img/stripe.png' %}" id="customButton" style="margin: -18px 0;float:right;" align="right">
+<script>
+    var csrftoken=$.cookie('csrftoken');
+    function csrfSafeMethod(method){
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+    $.ajaxSetup({
+        beforeSend:function(xhr,settings){
+            if(!csrfSafeMethod(settings.type) && !this.crossDomain){
+                xhr.setRequestHeader("X-CSRFTOKEN",csrftoken);
+            }
+        }
+    });
+    var handler=StripeCheckout.configure({
+        key:"pk_test_WZHl7dNAk1WbLUqyyNlvo7UX",
+        token:function(token){
+            $.post("{% url 'checkout' 'stripe' %}",{"stripeToken":token.id,'csrfmiddlewaretoken':csrftoken},function(data){
+                window.location.replace(data['redirect_url']);
+            });
+        }
+    });
+
+    $('#customButton').on('click',function(e){
+        handler.open({
+            name:"Mystery Book",
+            description:"{{count}} book {{count|pluralize}}",
+            currency:"USD",
+            amount:"{{total|to_cents}}"
+        });
+        e.preventDefault();
+    });
+    $(window).on('popstate',function(){
+        handler.close();
+    });
+    </script>
+            </a>
+        </div>
+        {% endif %}
+        </div>
+    </div>
+    </div>
+</div>         
+{% endblock %}
